@@ -1,6 +1,5 @@
 import { MeshBasicMaterial, PlaneGeometry, Raycaster } from 'three';
 import { Face, SphereGeometry } from 'three';
-import { Raycaster } from 'three';
 import THREE, { Plane, Ray, Vector3, Scene, AxesHelper, BufferGeometry, BufferAttribute, MeshLambertMaterial, DoubleSide, Mesh, PointLight, PerspectiveCamera, WebGLRenderer, LineBasicMaterial, Line, BoxGeometry } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 

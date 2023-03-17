@@ -613,9 +613,9 @@ Matrix4.prototype.setLookAt = function(eyeX, eyeY, eyeZ, centerX, centerY, cente
 
     // 代入する
     e = this.elements;
-    e[0] = sx;
-    e[1] = ux;
-    e[2] = -fx;
+    e[0] = sx; // _x
+    e[1] = ux; //_y
+    e[2] = -fx;  //_z
     e[3] = 0;
 
     e[4] = sy;

@@ -196,21 +196,22 @@ const drawCube = () => {
  
         //设置模型矩阵的相关信息
         var modelMatrix = new LMatrix4();
-        modelMatrix.makeRotationZ(0);
+        // modelMatrix.makeRotationZ(0);
         // modelMatrix.transpose();
  
         //设置透视投影矩阵
-        const camera = new PerspectiveCamera(30, el.width / el.height, 1, 100);
-        const projMatrix = new LMatrix4().copy(camera.projectionMatrix);
-        console.log("🚀 ~ file: Rotate.vue:101 ~ getModelViewMatrix4 ~ projMatrix:", projMatrix.transpose())
+        // const camera = new PerspectiveCamera(30, el.width / el.height, 1, 100);
+        // camera.position.set(300, 200, 400);
+        // const projMatrix = new LMatrix4().copy(camera.projectionMatrix);
+        // console.log("🚀 ~ file: Rotate.vue:101 ~ getModelViewMatrix4 ~ projMatrix:", projMatrix.transpose())
         // projMatrix.setPerspective(30, el.width / el.height, 1, 100);
         // const projMatrix = camera.matrix
         // viewMatrixt.transpose();
         // viewMatrixt.multiply(modelMatrix)
         // viewMatrixt.transpose();
         // //计算出模型视图矩阵 viewMatrix.multiply(modelMatrix)相当于在着色器里面u_ViewMatrix * u_ModelMatrix
-        var modeViewMatrix = projMatrix.multiply(viewMatrixt.multiply(modelMatrix));
-        return modeViewMatrix;
+        // var modeViewMatrix = projMatrix.multiply(viewMatrixt.multiply(modelMatrix));
+        return modelMatrix;
   }
   function getModelViewMatrix4WEb(el: HTMLCanvasElement) {
       // 设置视角矩阵的相关信息（视点，视线，上方向）

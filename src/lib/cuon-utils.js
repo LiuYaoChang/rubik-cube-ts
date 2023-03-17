@@ -6,7 +6,7 @@
  * @param fshader フラグメントシェーダのプログラム(文字列)
  * @return プログラムオブジェクトを生成し、カレントの設定に成功したらtrue
  */
-function initShaders(gl, vshader, fshader) {
+export function initShaders(gl, vshader, fshader) {
     var program = createProgram(gl, vshader, fshader);
     if (!program) {
         console.log('failed to create program');
@@ -26,7 +26,7 @@ function initShaders(gl, vshader, fshader) {
  * @param fshader フラグメントシェーダのプログラム(文字列)
  * @return 作成したプログラムオブジェクト。作成に失敗した場合はnull
  */
-function createProgram(gl, vshader, fshader) {
+export function createProgram(gl, vshader, fshader) {
     // シェーダオブジェクトを作成する
     var vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
     var fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
@@ -130,7 +130,7 @@ function loadVariableLocations(gl, program) {
  * @param opt_debug デバッグ用の初期化をするか
  * @return 初期化を完了したGLコンテキスト
  */
-function getWebGLContext(canvas, opt_debug) {
+export function getWebGLContext(canvas, opt_debug) {
     // コンテキストを取得する
     var gl = WebGLUtils.setupWebGL(canvas);
     if (!gl) return null;

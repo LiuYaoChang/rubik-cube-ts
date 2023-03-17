@@ -1,3 +1,4 @@
+import { BufferAttribute } from 'three';
 
 import {
   Object3D as THREEObject3D,
@@ -11,8 +12,11 @@ import {
   BoxGeometry,
   Camera,
   MeshLambertMaterial,
-  Matrix4
+  TextureLoader,
+  Texture,
+  ShaderMaterial
 } from 'three';
+import * as THREE from 'three';
 
 // import { SceneUtils } from 'three/examples/jsm/utils/SceneUtils.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -20,6 +24,23 @@ export const r: number = 1;
 import { THREExDomEvent } from './Threex_Domevent';
 import { create, Mesh, Object3D } from './Mesh';
 import { ThreexDomEventType } from './threex.domevent';
+
+const fragmentShader = `
+precision mediump float;
+uniform sampler2D map;
+varying vec2 vUv;
+void main() {
+  gl_FragColor = texture2D(map, vUv);
+}
+`;
+const vertexShader = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`
+
 
 type Axis = 'x' | 'y' | 'z';
 type Action = {
@@ -43,9 +64,21 @@ class SceneUtils {
     scene.add(child);
   }
 }
+const textureLoader = new TextureLoader();
+function loader(url: string) {
+  return textureLoader.loadAsync(url)
+}
 
 
-export function Rubik(el: HTMLElement, dimensions: number = 3, backgroundColor?: Color) {
+export function render(el: HTMLElement, urls: string[], dimensions: number = 3, backgroundColor?: Color) {
+  const loaders = urls.map((url: string) => loader(url));
+  Promise.all(loaders).then((textures) => {
+    // 
+    Rubik(el, dimensions, textures, backgroundColor);
+  })
+}
+
+export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture[], backgroundColor?: Color) {
   backgroundColor = backgroundColor || new Color(0x303030);
   const width = el.offsetWidth;
   const height = el.offsetHeight;
@@ -73,21 +106,65 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, backgroundColor?:
 
   const colours = [0xC41E3A, 0x009E60, 0x0051BA, 0xFF5800, 0xFFD500, 0xFFFFFF];
 
-  const faceMaterials = colours.map((color) => {
-    // const c: MeshLambertMaterialParameters
-    return new MeshLambertMaterial({ color })
-  })
+  // const faceMaterials = colours.map((color) => {
+  //   // const c: MeshLambertMaterialParameters
+  //   return new MeshLambertMaterial({ color })
+  // })
+  const faceMaterials = textures.map((texture: Texture) => {
+    const material = new MeshLambertMaterial({
+      map: texture
+    })
+    // const material = new ShaderMaterial({
+    //   depthFunc: THREE.AlwaysDepth,
+    //   uniforms: {
+    //     map: {
+    //       value: texture
+    //     }
+    //   },
+    //   vertexShader,
+    //   fragmentShader,
+    //   depthTest: false
+    // })
+    return material;
+  });
 
   // const cubeMaterials = new MeshFaceMaterial(faceMaterials)
-  const cubeSize = 3, spacing = 0.5;
+  const cubeSize = 3, spacing = 0.05;
 
   const increment = cubeSize + spacing;
   const maxExtent = (cubeSize * dimensions + spacing * (dimensions - 1)) / 2;
   const allCubes: Mesh[] = [];
 
-  function createCubeStep(x: number, y: number, z: number) {
+  function createCubeStep(x: number, y: number, z: number, xIndex: number, yIndex: number, zIndex: number) {
     const geometry = new BoxGeometry(cubeSize, cubeSize, cubeSize);
-
+    //console.log('1-开始创建组件-setup')
+    // 右 -> 左 -> 上 -> 下 -> 前 -> 后
+    // z === 2 - front face 
+    // 获取原来的uv
+    let uv = geometry.attributes.uv.array;
+    const k = 1/ dimensions;
+    if (zIndex === 2) {
+      let frontUv = [
+        k* xIndex, (yIndex+1) * k,
+        (xIndex + 1) * k, (yIndex + 1) * k, 
+        xIndex*k,yIndex*k,
+        (xIndex+1)*k,yIndex*k
+      ]
+      // const data = Array.from(uv).map(d => d);
+      // data.splice(24, 8, ...frontUv);
+      // console.log("🚀 ~ file: R.ts:156 ~ createCubeStep ~ data:", data);
+      let uvs: number[] = [];
+      for (let i = 0; i < 6; i++) {
+        uvs = uvs.concat(frontUv);
+      }
+      (geometry.attributes.uv as BufferAttribute).copyArray(uvs);
+    }
+    // const newUv = [0, 1, 0.3, 1, 0, 0.7, 0.3, 0.7];
+    // let uvs: number[] = [];
+    // for (let i = 0; i < 6; i++) {
+    //   uvs = uvs.concat(newUv);
+    // }
+    // (geometry.attributes.uv as BufferAttribute).copyArray(uvs);
     const cube = new Mesh(geometry, [...faceMaterials]);
 
     cube.castShadow = true;
@@ -122,7 +199,7 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, backgroundColor?:
           const x = (i - positionOffset) * increment;
           const y = (j - positionOffset) * increment;
           const z = (k - positionOffset) * increment;
-          createCubeStep(x, y, z);
+          createCubeStep(x, y, z, i, j, 2);
         }
       }
     }
@@ -179,7 +256,7 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, backgroundColor?:
     if (!isMoving) {
       clickVector = cube.rubikPosition.clone();
       const geometry = cube.geometry;
-      geometry.computeBoundingBox();
+      // geometry.computeBoundingBox();
       const centroid = new Vector3();
       // 顶点索引
       const { a, b, c } = event.targetFace;
