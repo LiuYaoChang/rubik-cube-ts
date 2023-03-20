@@ -141,30 +141,31 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
     // 右 -> 左 -> 上 -> 下 -> 前 -> 后
     // z === 2 - front face 
     // 获取原来的uv
-    let uv = geometry.attributes.uv.array;
-    const k = 1/ dimensions;
-    if (zIndex === 2) {
-      let frontUv = [
-        k* xIndex, (yIndex+1) * k,
-        (xIndex + 1) * k, (yIndex + 1) * k, 
-        xIndex*k,yIndex*k,
-        (xIndex+1)*k,yIndex*k
-      ]
-      // const data = Array.from(uv).map(d => d);
-      // data.splice(24, 8, ...frontUv);
-      // console.log("🚀 ~ file: R.ts:156 ~ createCubeStep ~ data:", data);
-      let uvs: number[] = [];
-      for (let i = 0; i < 6; i++) {
-        uvs = uvs.concat(frontUv);
-      }
-      (geometry.attributes.uv as BufferAttribute).copyArray(uvs);
-    }
+    // let uv = geometry.attributes.uv.array;
+    // const k = 1/ dimensions;
+    // if (zIndex === 2) {
+    //   let frontUv = [
+    //     k* xIndex, (yIndex+1) * k,
+    //     (xIndex + 1) * k, (yIndex + 1) * k, 
+    //     xIndex*k,yIndex*k,
+    //     (xIndex+1)*k,yIndex*k
+    //   ]
+    //   // const data = Array.from(uv).map(d => d);
+    //   // data.splice(24, 8, ...frontUv);
+    //   // console.log("🚀 ~ file: R.ts:156 ~ createCubeStep ~ data:", data);
+    //   let uvs: number[] = [];
+    //   for (let i = 0; i < 6; i++) {
+    //     uvs = uvs.concat(frontUv);
+    //   }
+    //   (geometry.attributes.uv as BufferAttribute).copyArray(uvs);
+    // }
     // const newUv = [0, 1, 0.3, 1, 0, 0.7, 0.3, 0.7];
     // let uvs: number[] = [];
     // for (let i = 0; i < 6; i++) {
     //   uvs = uvs.concat(newUv);
     // }
-    // (geometry.attributes.uv as BufferAttribute).copyArray(uvs);
+    const uvs = uvRebuild(xIndex, yIndex, zIndex);
+    (geometry.attributes.uv as BufferAttribute).copyArray(uvs);
     const cube = new Mesh(geometry, [...faceMaterials]);
 
     cube.castShadow = true;
@@ -191,6 +192,56 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
 
   }
 
+  function uvRebuild(x: number, y: number, z: number): number[] {
+    let d = dimensions - 1;
+    let k = 1 / dimensions;
+    let right: number[] = [
+      (d - z) * k, (y + 1) * k,
+      (d - z + 1) * k, (y+1) *k,
+      (d-z) *k, y*k,
+      (d-z+1)*k, y*k
+    ];
+    let left: number[] = [
+      z*k,(y+1)*k,
+      (z+1)*k, (y+1)*k,
+      z*k, y*k,
+      (z+1)*k, y*k
+    ];
+    let top: number[] = [
+      x*k,(d-z+1)*k,
+      (x+1)*k, (d-z+1)*k,
+      x*k,(d-z)*k,
+      (x+1)*k,(d-z)*k
+    ];
+    let bottom: number[] = [
+      x*k,(z+1)*k,
+      (x+1)*k,(z+1)*k,
+      x*k, z*k,
+      (x+1)*k,z*k
+    ];
+    let front: number[] = [
+      x*k,(y+1)*k,
+      (x+1)*k,(y+1)*k,
+      x*k,y*k,
+      (x+1)*k, y*k
+    ];
+    let back: number[] = [
+      (d-x)*k,(y+1)*k,
+      (d-x+1)*k,(y+1)*k,
+      (d-x)*k,y*k,
+      (d-x+1)*k,y*k
+    ];
+
+    return [
+      ...right,
+      ...left,
+      ...top,
+      ...bottom,
+      ...front,
+      ...back
+    ]
+  }
+
   function createCubes() {
     const positionOffset = (dimensions - 1) / 2;
     for (let i = 0; i < dimensions; i++) {
@@ -199,7 +250,7 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
           const x = (i - positionOffset) * increment;
           const y = (j - positionOffset) * increment;
           const z = (k - positionOffset) * increment;
-          createCubeStep(x, y, z, i, j, 2);
+          createCubeStep(x, y, z, i, j, k);
         }
       }
     }
