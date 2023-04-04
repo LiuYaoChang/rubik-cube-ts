@@ -1,5 +1,5 @@
 
-import { Camera, Raycaster, Vector3 } from "three";
+import { Camera, Face, Raycaster, Vector3 } from "three";
 import { Object3D, Mesh } from "./Mesh";
 
 // export type Object3D = Mesh;
@@ -16,7 +16,13 @@ type Handle = {
 // type DomEventInner = {
 //   [index: string]: Handle[]
 // }
-
+export type ThreexDomEventType = {
+  type: string;
+  target: Object3D;
+  targetFace: Face,
+  origDomEvent: MouseEvent;
+  stopPropagation: Function;
+}
 
 export class THREExDomEvent {
 

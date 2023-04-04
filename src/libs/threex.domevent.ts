@@ -236,6 +236,7 @@ export class THREExDomEvent {
     }
 
     _onMouseMove(event: MouseEvent): void {
+      console.log("🚀 ~ file: threex.domevent.ts:239 ~ THREExDomEvent ~ _onMouseMove ~ _onMouseMove:")
       var mouseX	= +(event.clientX / window.innerWidth ) * 2 - 1;
       var mouseY	= -(event.clientY / window.innerHeight) * 2 + 1;
       return this._onMove(mouseX, mouseY, event);

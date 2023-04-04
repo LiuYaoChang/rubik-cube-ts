@@ -8,12 +8,12 @@
   type RubikObj = {}
   const el = ref<HTMLElement>();
   const rubik = ref<RubikObj>();
-  
 
   onMounted(() => {
     // Select();
     // draw(el.value as HTMLElement);
     // console.log(r)
+    // 6 张纹理
     rubik.value = Rubik(el.value as HTMLElement);
   })
 

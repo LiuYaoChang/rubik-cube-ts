@@ -1,5 +1,5 @@
 import { BufferAttribute } from 'three';
-
+import { EventEmitter } from 'eventemitter3'
 import {
   Object3D as THREEObject3D,
   Vector3,
@@ -13,17 +13,15 @@ import {
   Camera,
   MeshLambertMaterial,
   TextureLoader,
-  Texture,
-  ShaderMaterial
+  Texture
 } from 'three';
-import * as THREE from 'three';
 
 // import { SceneUtils } from 'three/examples/jsm/utils/SceneUtils.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 export const r: number = 1;
-import { THREExDomEvent } from './Threex_Domevent';
+import { THREExDomEvent, ThreexDomEventType } from './Threex_Domevent';
 import { create, Mesh, Object3D } from './Mesh';
-import { ThreexDomEventType } from './threex.domevent';
+// import { ThreexDomEventType } from './threex.domevent';
 
 const fragmentShader = `
 precision mediump float;
@@ -69,7 +67,7 @@ function loader(url: string) {
   return textureLoader.loadAsync(url)
 }
 
-
+const moveEvents = new EventEmitter();
 export function render(el: HTMLElement, urls: string[], dimensions: number = 3, backgroundColor?: Color) {
   const loaders = urls.map((url: string) => loader(url));
   Promise.all(loaders).then((textures) => {
@@ -175,11 +173,11 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
     // object.target = cube;
     const object = new Object3D(cube);
     threexDomEvent.bind(object, 'mousedown', function (e: ThreexDomEventType) {
-      console.log("🚀 ~ file: R.ts:60 ~ e", e)
+      // console.log("🚀 ~ file: R.ts:60 ~ e", e)
       onCubeMouseDown(e, cube);
     })
     threexDomEvent.bind(object, 'mouseup', function (e: MouseEvent) {
-      console.log("🚀 ~ file: R.ts:63 ~ e", e)
+      // console.log("🚀 ~ file: R.ts:63 ~ e", e)
       onCubeMouseUp(e, cube);
     })
     threexDomEvent.bind(object, 'mouseout', function (e: ThreexDomEventType) {
@@ -364,7 +362,7 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
         }
 
         queueMove(cube, clickVector.clone(), rotateAxis, direction);
-        runNextMove();
+        startNextMove();
         enabledConTrol();
 
       }
@@ -395,6 +393,7 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
   const pivot = create();
   const rotationSpeed = 0.2;
   const moveQueue: Action[] = [];
+  let completedMoveStack: Action[] = [];
   function queueMove(cube: Mesh, v: Vector3, axis: Axis, direction: number) {
     moveQueue.push({
       cube,
@@ -418,9 +417,8 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
     }
   }
 
-  function runNextMove() {
+  function startNextMove() {
     const next = moveQueue.pop();
-
     if (next) {
       clickVector = next.vector;
       const direction = next.direction || 1;
@@ -445,6 +443,8 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
       } else {
         console.log('---------------- NOTHING TO MOVE -----------------');
       }
+    } else {
+      moveEvents.emit('deplete');
     }
   }
 
@@ -478,7 +478,9 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
       SceneUtils.detach(cube, scene, pivot);
     })
 
-    runNextMove();
+    completedMoveStack.push(currentMovingTask);
+    moveEvents.emit('complete');
+    startNextMove();
 
   }
 
@@ -506,6 +508,39 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
     renderer.render(scene, camera);
     requestAnimationFrame(render);
   }
+
+  // 生成随机数
+  /*** Util ***/
+  function randomInt(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+  
+  function shuffle() {
+    const axis: Axis[] = ['x', 'y', 'z'];
+    function randomAxis(): Axis {
+      return axis[randomInt(0,2)];
+    }
+
+    function randomDirection() {
+      var x = randomInt(0,1);
+      if(x == 0) x = -1;
+      return x;
+    }
+
+    function randomCube() {
+      var i = randomInt(0, allCubes.length - 1);
+      //TODO: don't return a centre cube
+      return allCubes[i];
+    }
+
+    var nMoves = randomInt(10, 40);
+    for(var i = 0; i < nMoves; i ++) {
+      //TODO: don't reselect the same axis?
+      var cube = randomCube();
+      queueMove(cube, cube.position.clone(), randomAxis(), randomDirection());
+    }
+    startNextMove();
+  }
   // 生成cube
   createCubes();
   render();
@@ -517,6 +552,40 @@ export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture
   })
   // 返回一个闭包
   return {
+    shuffle: shuffle,
+    solve: function() {
+      if(!isMoving) {
+        completedMoveStack.forEach(function(move) {
+          queueMove(move.cube, move.vector, move.axis, move.direction * -1);
+        });
+
+        //Don't remember the moves we're making whilst solving
+        completedMoveStack = [];
+
+        moveEvents.once('deplete', function() {
+          completedMoveStack = [];
+        });
+
+        startNextMove();
+      }
+    },
+    //Rewind the last move
+    undo: function() {
+      if(!isMoving) {
+        var lastMove = completedMoveStack.pop();
+        if(lastMove) {
+          //clone
+          var stackToRestore = completedMoveStack.slice(0);
+          queueMove(lastMove.cube, lastMove.vector, lastMove.axis, lastMove.direction * -1);
+
+          moveEvents.once('complete', function() {
+            completedMoveStack = stackToRestore;
+          });
+
+          startNextMove();
+        }
+      }
+    },
     threexDomEvent
   };
 
