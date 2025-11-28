@@ -76,7 +76,7 @@ export function render(el: HTMLElement, urls: string[], dimensions: number = 3, 
   })
 }
 
-export function Rubik(el: HTMLElement, dimensions: number = 3, textures: Texture[], backgroundColor?: Color) {
+export function Rubik(el: HTMLElement, dimensions: number = 3, textures?: Texture[], backgroundColor?: Color) {
   backgroundColor = backgroundColor || new Color(0x303030);
   const width = el.offsetWidth;
   const height = el.offsetHeight;
