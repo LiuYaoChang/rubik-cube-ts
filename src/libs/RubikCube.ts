@@ -1,6 +1,7 @@
 import { AmbientLight, AxesHelper, Box3, BoxGeometry, BufferAttribute, Color, Group, Mesh, MeshLambertMaterial, MOUSE, Object3D, PerspectiveCamera, Raycaster, Scene, Texture, TextureLoader, Vector2, Vector3, WebGLRenderer } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls';
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 
 
 
@@ -71,6 +72,7 @@ export async function RubikCube(el: HTMLElement, dimensions: number = 3, urls: s
   const domRect = el.getBoundingClientRect();
   const width = domRect.width;
   const height = domRect.height;
+
 
 
   const cubeGroup = new Group();
@@ -162,27 +164,32 @@ export async function RubikCube(el: HTMLElement, dimensions: number = 3, urls: s
   createCubes();
 
   scene.add(cubeGroup);
+  // const meshControls = new TransformControls( camera, renderer.domElement );
+  // meshControls.setMode("rotate");
+
+  // meshControls.attach(cubeGroup);
+  // scene.add(meshControls);
   // new TrackballControls(camera, renderer.domElement) 
-  const control = new TrackballControls(camera, renderer.domElement)
-  control.mouseButtons = {
+  // const controls = new OrbitControls(camera, renderer.domElement)
+  const controls = new TrackballControls(camera, renderer.domElement)
+  controls.mouseButtons = {
     LEFT: MOUSE.PAN,
     MIDDLE: MOUSE.DOLLY,
     RIGHT: MOUSE.ROTATE
   }
-  control.noPan = true;
-  control.rotateSpeed = 5;
+  controls.noPan = true;
+  controls.rotateSpeed = 5;
   let clickFace: Axis = 'x';
   let clickVectorStart: Vector3 | null;
-
+  let completedMoveStack: Task[] = [];
   const handleMouseDown = (ev: MouseEvent) => {
-
     if (ev.button !== MOUSE.LEFT) {
       console.log("🚀 ~ handleMouseDown ~ ev.button:", ev.button, MOUSE.LEFT)
       return;
     }
     const intersect = getIntersectObject(ev, camera);
     if (intersect) {
-      toggleControl(false);
+      toggleControl(true);
       const point = intersect.point;
       const object = intersect.object as CubeMesh;
 
@@ -233,11 +240,12 @@ export async function RubikCube(el: HTMLElement, dimensions: number = 3, urls: s
           }
           queueMove(object, clickVectorStart.clone(), rotateAxis, direction);
           startNextMove();
+          toggleControl(false);
         }
         // 点击第一个点
         clickVectorStart = object.rubikPosition.clone();
       } else {
-        toggleControl(true);
+
       }
     }
   }
@@ -353,8 +361,7 @@ export async function RubikCube(el: HTMLElement, dimensions: number = 3, urls: s
       cube.rubikPosition.applyMatrix4(pivot.matrixWorld);
       SceneUtils.detach(cube, cubeGroup, pivot);
     })
-    toggleControl(true);
-    // completedMoveStack.push(currentMovingTask);
+    completedMoveStack.push(currentMovingTask);
     // moveEvents.emit('complete');
     startNextMove();
 
@@ -413,14 +420,14 @@ export async function RubikCube(el: HTMLElement, dimensions: number = 3, urls: s
   }
 
   function toggleControl(enabled: boolean) {
-    control.enabled = enabled;
+    controls.noRotate = enabled;
   }
 
   function render() {
     if (isMoving) {
       doWork();
     }
-    control.update();
+    controls.update();
     renderer.render(scene, camera);
     requestAnimationFrame(render);
   }
@@ -428,7 +435,23 @@ export async function RubikCube(el: HTMLElement, dimensions: number = 3, urls: s
   requestAnimationFrame(render);
 
   return {
-    shuffle
+    shuffle,
+    solve: function() {
+      if(!isMoving) {
+        completedMoveStack.forEach(function(move) {
+          queueMove(move.cube, move.vector, move.rotateAxis, move.direction * -1);
+        });
+
+        //Don't remember the moves we're making whilst solving
+        completedMoveStack = [];
+
+        // moveEvents.one('deplete', function() {
+        //   completedMoveStack = [];
+        // });
+
+        startNextMove();
+      }
+    },
   }
 
 }

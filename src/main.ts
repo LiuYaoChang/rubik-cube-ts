@@ -8,5 +8,13 @@ import Texture from './pages/Texture.vue';
 import Clothes from './pages/Clothes.vue';
 import BorderLine from './pages/BorderLine.vue'
 import MultyCube from './pages/MultyCube.vue'
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
 // createApp(App).mount('#app')
-createApp(MultyCube).mount('#app')
+const app = createApp(MultyCube);
+
+app.use(ElementPlus);
+
+app.mount('#app');
+
+

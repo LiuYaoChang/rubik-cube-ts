@@ -1,6 +1,9 @@
 <template>
   <div id="renderer" ref="el"></div>
-  <div class="fixed" @click="handleClick">打乱</div>
+  <div class="fixed">
+    <el-button type="primary" @click="handleClick">打乱</el-button>
+    <el-button type="success" @click="handleRecover">复原</el-button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -41,6 +44,9 @@ onMounted(async () => {
 
 const handleClick = () => {
   rubikCube.value.shuffle();
+}
+const handleRecover = () => {
+  rubikCube.value.solve();
 }
 watchEffect(()=>{
 })
